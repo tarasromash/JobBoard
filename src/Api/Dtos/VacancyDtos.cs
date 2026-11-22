@@ -19,7 +19,16 @@ public record UpdateVacancyDto(
     string Title, string Company, decimal Salary,
     DateTime PublishedAt, bool IsRemote, VacancyLevel Level);
 
-// Control work 2: filter request DTO.
 public record SearchVacancyDto
 {
+    public string? Title { get; init; }
+    public string? Company { get; init; }
+    public decimal? SalaryFrom { get; init; }
+    public decimal? SalaryTo { get; init; }
+    public DateTime? PublishedAtFrom { get; init; }
+    public DateTime? PublishedAtTo { get; init; }
+    public bool? IsRemote { get; init; }
+    public string? Level { get; init; }
+    public DateTime? CreatedAtFrom { get; init; }
+    public DateTime? CreatedAtTo { get; init; }
 }

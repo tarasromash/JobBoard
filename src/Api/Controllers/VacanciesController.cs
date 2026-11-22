@@ -29,6 +29,49 @@ public class VacanciesController(ISender sender, IVacancyQueries vacancyQueries)
             () => NotFound());
     }
 
+    [HttpPost("filter")]
+    public async Task<ActionResult<IReadOnlyList<VacancyDto>>> Filter(
+        [FromBody] SearchVacancyDto request, CancellationToken cancellationToken)
+    {
+        VacancyLevel? level = null;
+        if (!string.IsNullOrWhiteSpace(request.Level))
+        {
+            if (!Enum.TryParse<VacancyLevel>(request.Level, ignoreCase: true, out var parsed)
+                || !Enum.IsDefined(parsed))
+            {
+                ModelState.AddModelError(nameof(request.Level),
+                    $"Unknown level '{request.Level}'. Allowed: {string.Join(", ", Enum.GetNames<VacancyLevel>())}");
+                return ValidationProblem(ModelState);
+            }
+
+            level = parsed;
+        }
+
+        var vacancies = await vacancyQueries.Filter(
+            request.Title,
+            request.Company,
+            request.SalaryFrom,
+            request.SalaryTo,
+            ToUtc(request.PublishedAtFrom),
+            ToUtc(request.PublishedAtTo),
+            request.IsRemote,
+            level,
+            ToUtc(request.CreatedAtFrom),
+            ToUtc(request.CreatedAtTo),
+            cancellationToken);
+
+        return vacancies.Select(VacancyDto.FromDomainModel).ToList();
+    }
+
+    // Filter dates are interpreted as UTC: a value without an offset is treated as UTC as-is.
+    private static DateTime? ToUtc(DateTime? value)
+        => value switch
+        {
+            null => null,
+            { Kind: DateTimeKind.Unspecified } v => DateTime.SpecifyKind(v, DateTimeKind.Utc),
+            { } v => v.ToUniversalTime()
+        };
+
     [HttpPost]
     public async Task<ActionResult<VacancyDto>> Create(
         [FromBody] CreateVacancyDto request, CancellationToken cancellationToken)
